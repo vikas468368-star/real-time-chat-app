@@ -25,6 +25,7 @@ class Message(db.Model):
     message = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=db.func.current_timestamp())
     is_read = db.Column(db.Boolean, default=False)
+    is_edited = db.Column(db.Boolean, default=False)
 
 class DeletedMessage(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -33,6 +34,15 @@ class DeletedMessage(db.Model):
 
 with app.app_context():
     db.create_all()
+    try:
+        with db.engine.connect() as conn:
+            from sqlalchemy import text
+            cols = [row[1] for row in conn.execute(text("PRAGMA table_info(message)")).fetchall()]
+            if "is_edited" not in cols:
+                conn.execute(text("ALTER TABLE message ADD COLUMN is_edited BOOLEAN DEFAULT 0"))
+                conn.commit()
+    except Exception as e:
+        print("Schema update notice:", e)
 
 
 @app.route("/")
@@ -131,7 +141,8 @@ def handle_message(data):
         "sender_id": sender_id,
         "username": session["username"],
         "message": message,
-        "timestamp": new_message.timestamp.strftime("%I:%M %p")
+        "timestamp": new_message.timestamp.strftime("%I:%M %p"),
+        "is_edited": False
     }
 
     emit(
@@ -185,7 +196,8 @@ def load_messages(data):
             "sender_id": msg.sender_id,
             "username": sender.username,
             "message": msg.message,
-            "timestamp": msg.timestamp.strftime("%I:%M %p")
+            "timestamp": msg.timestamp.strftime("%I:%M %p"),
+            "is_edited": bool(getattr(msg, "is_edited", False))
         })
 
     emit("chat_history", {"messages": history})
@@ -289,11 +301,11 @@ def delete_message_for_me(data):
 
 @socketio.on("edit_message")
 def edit_message(data):
-    message_id = data["message_id"]
-    new_text = data["message"].strip()
-    current_user_id = session["user_id"]
+    message_id = data.get("message_id")
+    new_text = (data.get("message") or "").strip()
+    current_user_id = session.get("user_id")
 
-    if not new_text:
+    if not new_text or not message_id or not current_user_id:
         return
 
     message = Message.query.get(message_id)
@@ -305,6 +317,7 @@ def edit_message(data):
         return
 
     message.message = new_text
+    message.is_edited = True
     db.session.commit()
 
     room = (
@@ -318,7 +331,8 @@ def edit_message(data):
         "message_edited",
         {
             "message_id": message_id,
-            "message": new_text
+            "message": new_text,
+            "is_edited": True
         },
         room=room
     )

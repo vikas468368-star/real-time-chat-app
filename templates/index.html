@@ -3,113 +3,286 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Real-Time Chat</title>
+    <title>PulseChat • Real-Time Messaging</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <div class="chat-container">
 
-        <aside class="sidebar">
+        <!-- ================= SIDEBAR ================= -->
+        <aside class="sidebar" id="sidebar">
             
-<div class="profile">
-    <div class="avatar">{{ username[0].upper() }}</div>
-    <div class="profile-details">
-        <h3>{{ username }}</h3>
-        <span>Online</span>
-    </div>
-    <button
-        type="button"
-        id="themeToggle"
-        class="theme-toggle"
-        aria-label="Switch theme"
-        title="Switch theme"
-    >☾</button>
-</div>
-
-
-            <div class="search">
-                <input type="text" placeholder="Search users...">
+            <!-- User Profile Header -->
+            <div class="profile">
+                <div class="avatar-wrap">
+                    <div class="avatar my-avatar" id="myAvatar">{{ username[0].upper() }}</div>
+                    <span class="status-indicator-dot online"></span>
+                </div>
+                <div class="profile-details">
+                    <div class="profile-name-row">
+                        <h3 class="profile-username">{{ username }}</h3>
+                    </div>
+                    <div class="profile-status-badge">
+                        <span class="pulse-beacon"></span>
+                        <span class="status-badge-text">Active now</span>
+                    </div>
+                </div>
+                <div class="profile-actions">
+                    <button
+                        type="button"
+                        id="themeToggle"
+                        class="theme-toggle"
+                        aria-label="Toggle theme"
+                        title="Toggle dark/light theme"
+                    >
+                        <span class="theme-icon-sun">☼</span>
+                        <span class="theme-icon-moon">☾</span>
+                    </button>
+                    <a href="{{ url_for('logout') }}" class="logout-link" title="Logout" aria-label="Logout">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                            <polyline points="16 17 21 12 16 7"></polyline>
+                            <line x1="21" y1="12" x2="9" y2="12"></line>
+                        </svg>
+                    </a>
+                </div>
             </div>
 
-            <div class="users">
-{% for user in users %}
-<div class="user" onclick="joinChat({{ user.id }}, '{{ user.username }}')">
+            <!-- Search Bar -->
+            <div class="search">
+                <div class="search-input-wrap">
+                    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                    <input type="text" id="searchInput" placeholder="Search direct messages..." autocomplete="off">
+                    <span class="search-shortcut">/</span>
+                </div>
+            </div>
 
-    <div class="avatar">
-        {{ user.username[0].upper() }}
-    </div>
+            <!-- Contacts Navigation List -->
+            <div class="users-section-header">
+                <span>DIRECT MESSAGES</span>
+                <span class="users-count">{{ users|length }}</span>
+            </div>
 
-    <div class="user-info">
-        <h4>{{ user.username }}</h4>
-        <span id="status-{{ user.id }}">Offline</span>
-    </div>
+            <div class="users" id="usersList">
+                {% for user in users %}
+                <div
+                    class="user"
+                    onclick="joinChat({{ user.id }}, '{{ user.username }}')"
+                    data-username="{{ user.username.lower() }}"
+                    id="user-item-{{ user.id }}"
+                >
+                    <div class="avatar-wrap">
+                        <div class="avatar contact-avatar" data-name="{{ user.username }}">
+                            {{ user.username[0].upper() }}
+                        </div>
+                        <span class="status-indicator-dot" id="dot-{{ user.id }}"></span>
+                    </div>
 
-    <span id="unread-{{ user.id }}" class="unread-badge"></span>
-
-</div>
-{% endfor %}
-
-</div>
+                    <div class="user-info">
+                        <div class="user-info-top">
+                            <h4 class="contact-name">{{ user.username }}</h4>
+                            <span class="contact-time" id="time-{{ user.id }}"></span>
+                        </div>
+                        <div class="user-info-bottom">
+                            <span id="status-{{ user.id }}" class="status-label">Offline</span>
+                            <span id="unread-{{ user.id }}" class="unread-badge"></span>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="no-contacts-state">
+                    <p>No other users registered yet.</p>
+                </div>
+                {% endfor %}
+            </div>
         </aside>
 
-        <main class="chat-area">
+        <!-- ================= CHAT AREA ================= -->
+        <main class="chat-area" id="chatArea">
 
-        
-<div class="chat-header">
-    <button
-        type="button"
-        class="mobile-back-button"
-        onclick="backToContacts()"
-        aria-label="Back to contacts"
-    >&larr;</button>
+            <!-- Chat Room Header -->
+            <div class="chat-header">
+                <div class="chat-header-left">
+                    <button
+                        type="button"
+                        class="mobile-back-button"
+                        onclick="backToContacts()"
+                        aria-label="Back to contacts list"
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </button>
 
-    <div class="avatar" id="chatAvatar">?</div>
+                    <div class="avatar-wrap">
+                        <div class="avatar chat-header-avatar" id="chatAvatar">?</div>
+                        <span class="status-indicator-dot" id="chatHeaderDot"></span>
+                    </div>
 
-    <div>
-        <h3 id="chatUsername">Select a user</h3>
-        <span id="chatStatus">Offline</span>
-    </div>
-</div>
-
-
-            <section class="messages">
-                <div class="message received">
-                    <p>Hello! 👋</p>
-                    <span>10:30 AM</span>
+                    <div class="chat-header-info">
+                        <h3 id="chatUsername">Select a conversation</h3>
+                        <div class="chat-header-status-wrap">
+                            <span id="chatStatusBeacon" class="status-beacon-sm offline"></span>
+                            <span id="chatStatus" class="chat-status-text">Select contact to chat</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="message sent">
-                    <p>Hi Alex! How are you?</p>
-                    <span>10:31 AM</span>
+                <div class="chat-header-actions" id="chatHeaderActions">
+                    <div class="connection-status-pill">
+                        <span class="live-dot"></span>
+                        <span>Encrypted & Live</span>
+                    </div>
                 </div>
+            </div>
 
-                <div class="message received">
-                    <p>I'm good! What about you?</p>
-                    <span>10:32 AM</span>
+            <!-- Messages Stream -->
+            <section class="messages" id="messagesContainer">
+                <div class="chat-empty-state" id="chatEmptyState">
+                    <div class="empty-state-badge">
+                        <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                    </div>
+                    <h3>Start a Conversation</h3>
+                    <p>Select any contact from the sidebar to start instant real-time messaging with live edits and read receipts.</p>
                 </div>
-
             </section>
-            <div id="typingIndicator" class="typing-indicator"></div>
-            <div class="message-input">
-    <input
-        type="text"
-        id="messageInput"
-        placeholder="Type a message..."
-        onkeydown="if(event.key === 'Enter') sendMessage()"
-    >
 
-    <button onclick="sendMessage()">➤</button>
-</div>
+            <!-- Typing Wave Indicator -->
+            <div id="typingIndicator" class="typing-indicator" style="display: none;"></div>
+
+            <!-- Input Dock & Editing Controls -->
+            <div class="message-dock-container">
+                
+                <!-- Slide-Down Message Edit Banner -->
+                <div id="editingBanner" class="editing-banner" style="display: none;">
+                    <div class="editing-info">
+                        <div class="editing-icon-pill">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 20h9"></path>
+                                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                            </svg>
+                            <span>Editing Message</span>
+                        </div>
+                        <span id="editingPreviewText" class="editing-preview"></span>
+                    </div>
+                    <button type="button" class="cancel-edit-btn" onclick="cancelEditing()" title="Cancel editing (Esc)">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Quick Emojis Shelf (Toggled on button click) -->
+                <div id="emojiShelf" class="emoji-shelf" style="display: none;">
+                    <button type="button" class="emoji-chip" onclick="insertEmoji('👋')">👋</button>
+                    <button type="button" class="emoji-chip" onclick="insertEmoji('👍')">👍</button>
+                    <button type="button" class="emoji-chip" onclick="insertEmoji('❤️')">❤️</button>
+                    <button type="button" class="emoji-chip" onclick="insertEmoji('😂')">😂</button>
+                    <button type="button" class="emoji-chip" onclick="insertEmoji('🔥')">🔥</button>
+                    <button type="button" class="emoji-chip" onclick="insertEmoji('🎉')">🎉</button>
+                    <button type="button" class="emoji-chip" onclick="insertEmoji('🚀')">🚀</button>
+                    <button type="button" class="emoji-chip" onclick="insertEmoji('✨')">✨</button>
+                    <button type="button" class="emoji-chip" onclick="insertEmoji('💯')">💯</button>
+                </div>
+
+                <!-- Interactive Message Input Pill -->
+                <div class="message-input-bar">
+                    <button
+                        type="button"
+                        class="dock-action-btn"
+                        id="emojiToggleBtn"
+                        title="Add emoji"
+                        onclick="toggleEmojiShelf()"
+                    >
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+                            <line x1="9" y1="9" x2="9.01" y2="9"></line>
+                            <line x1="15" y1="9" x2="15.01" y2="9"></line>
+                        </svg>
+                    </button>
+
+                    <input
+                        type="text"
+                        id="messageInput"
+                        placeholder="Type a message... (Press Enter to send)"
+                        autocomplete="off"
+                    >
+
+                    <button
+                        id="sendButton"
+                        class="send-dock-btn"
+                        onclick="sendMessage()"
+                        title="Send message"
+                    >
+                        <svg class="send-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                        <svg class="save-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </button>
+                </div>
+
+            </div>
 
         </main>
 
     </div>
-    <script>
-    const USER_ID = {{ session["user_id"] }};
-    const CURRENT_USERNAME = "{{ username }}";
-</script>
-<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
-<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 
+    <!-- ================= DELETE OPTIONS MODAL ================= -->
+    <div id="deleteModal" class="modal-overlay" style="display: none;">
+        <div class="modal-card">
+            <div class="modal-icon-wrap">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                    <line x1="10" y1="11" x2="10" y2="17"></line>
+                    <line x1="14" y1="11" x2="14" y2="17"></line>
+                </svg>
+            </div>
+            <div class="modal-header">
+                <h3>Delete Message</h3>
+                <button type="button" class="modal-close-btn" onclick="closeDeleteModal()" title="Close">✕</button>
+            </div>
+            <p class="modal-desc">This action cannot be undone. Please choose how you want to delete this message:</p>
+            <div class="modal-actions">
+                <button id="deleteForEveryoneBtn" class="modal-btn btn-danger" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"></line>
+                    </svg>
+                    <span>Delete for Everyone</span>
+                </button>
+                <button id="deleteForMeBtn" class="modal-btn btn-secondary" type="button">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span>Delete for Me</span>
+                </button>
+                <button id="cancelDeleteBtn" class="modal-btn btn-ghost" type="button" onclick="closeDeleteModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Client State & Dependencies -->
+    <script>
+        const USER_ID = {{ session["user_id"] }};
+        const CURRENT_USERNAME = "{{ username }}";
+    </script>
+    <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 </body>
 </html>

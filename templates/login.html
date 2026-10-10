@@ -3,40 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
+    <title>Login • PulseChat</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/auth.css') }}">
 </head>
 <body>
 
-<div class="auth-container">
+<div class="auth-card">
+    <div class="auth-brand">
+        <div class="brand-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+            </svg>
+        </div>
+        <h1>Welcome Back</h1>
+        <p>Log in to access your real-time conversations</p>
+    </div>
 
-    <h1>Welcome Back</h1>
+    <form method="POST" class="auth-form">
+        <div class="form-group">
+            <label for="username">Username</label>
+            <div class="input-wrap">
+                <input
+                    type="text"
+                    id="username"
+                    name="username"
+                    placeholder="Enter your username"
+                    autocomplete="username"
+                    required
+                >
+            </div>
+        </div>
 
-    <form method="POST">
+        <div class="form-group">
+            <label for="password">Password</label>
+            <div class="input-wrap">
+                <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Enter your password"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+        </div>
 
-        <input
-            type="text"
-            name="username"
-            placeholder="Username"
-            required
-        >
-
-        <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            required
-        >
-
-        <button type="submit">Login</button>
-
+        <button type="submit" class="auth-btn">Log In to Chat</button>
     </form>
 
-    <p>
-        Don't have an account?
-        <a href="{{ url_for('register') }}">Register</a>
-    </p>
-
+    <div class="auth-footer">
+        <p>
+            Don't have an account?
+            <a href="{{ url_for('register') }}">Create an account</a>
+        </p>
+    </div>
 </div>
 
 </body>
