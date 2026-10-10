@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time Chat</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="chat-container">
+
+        <aside class="sidebar">
+            
+<div class="profile">
+    <div class="avatar">{{ username[0].upper() }}</div>
+    <div class="profile-details">
+        <h3>{{ username }}</h3>
+        <span>Online</span>
+    </div>
+    <button
+        type="button"
+        id="themeToggle"
+        class="theme-toggle"
+        aria-label="Switch theme"
+        title="Switch theme"
+    >☾</button>
+</div>
+
+
+            <div class="search">
+                <input type="text" placeholder="Search users...">
+            </div>
+
+            <div class="users">
+{% for user in users %}
+<div class="user" onclick="joinChat({{ user.id }}, '{{ user.username }}')">
+
+    <div class="avatar">
+        {{ user.username[0].upper() }}
+    </div>
+
+    <div class="user-info">
+        <h4>{{ user.username }}</h4>
+        <span id="status-{{ user.id }}">Offline</span>
+    </div>
+
+    <span id="unread-{{ user.id }}" class="unread-badge"></span>
+
+</div>
+{% endfor %}
+
+</div>
+        </aside>
+
+        <main class="chat-area">
+
+        
+<div class="chat-header">
+    <button
+        type="button"
+        class="mobile-back-button"
+        onclick="backToContacts()"
+        aria-label="Back to contacts"
+    >&larr;</button>
+
+    <div class="avatar" id="chatAvatar">?</div>
+
+    <div>
+        <h3 id="chatUsername">Select a user</h3>
+        <span id="chatStatus">Offline</span>
+    </div>
+</div>
+
+
+            <section class="messages">
+                <div class="message received">
+                    <p>Hello! 👋</p>
+                    <span>10:30 AM</span>
+                </div>
+
+                <div class="message sent">
+                    <p>Hi Alex! How are you?</p>
+                    <span>10:31 AM</span>
+                </div>
+
+                <div class="message received">
+                    <p>I'm good! What about you?</p>
+                    <span>10:32 AM</span>
+                </div>
+
+            </section>
+            <div id="typingIndicator" class="typing-indicator"></div>
+            <div class="message-input">
+    <input
+        type="text"
+        id="messageInput"
+        placeholder="Type a message..."
+        onkeydown="if(event.key === 'Enter') sendMessage()"
+    >
+
+    <button onclick="sendMessage()">➤</button>
+</div>
+
+        </main>
+
+    </div>
+    <script>
+    const USER_ID = {{ session["user_id"] }};
+    const CURRENT_USERNAME = "{{ username }}";
+</script>
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+<script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+
+</body>
+</html>
