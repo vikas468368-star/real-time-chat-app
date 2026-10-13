@@ -182,10 +182,17 @@ def get_google_client_id():
     return ""
 
 
+ALLOW_PUBLIC_REGISTRATION = os.environ.get("ALLOW_PUBLIC_REGISTRATION", "false").lower() in ("true", "1", "yes")
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if "user_id" in session:
         return redirect(url_for("home"))
+
+    if not ALLOW_PUBLIC_REGISTRATION:
+        flash("Public account registration is disabled. Please sign in with Google or your existing account.", "info")
+        return redirect(url_for("login"))
 
     google_client_id = get_google_client_id()
 

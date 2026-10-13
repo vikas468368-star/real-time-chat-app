@@ -1,5 +1,6 @@
 import unittest
 import time
+from werkzeug.security import generate_password_hash
 from app import app, db, User, reset_login_attempts
 
 class AuthSecurityTestCase(unittest.TestCase):
@@ -19,29 +20,28 @@ class AuthSecurityTestCase(unittest.TestCase):
             db.session.commit()
         reset_login_attempts("127.0.0.1")
 
-    def test_registration_validation(self):
-        """Test username & password server-side validation rules"""
-        # Invalid username pattern (spaces or special characters)
-        res = self.client.post("/register", data={"username": "bad user!", "password": "password123"})
-        self.assertEqual(res.status_code, 400)
-
-        # Short password
-        res = self.client.post("/register", data={"username": "autotest_user", "password": "123"})
-        self.assertEqual(res.status_code, 400)
-
-        # Valid registration
-        res = self.client.post("/register", data={"username": "autotest_user", "password": "strongpassword123"}, follow_redirects=False)
+    def test_registration_disabled(self):
+        """Test that public registration is disabled by default and redirects to login"""
+        # GET request to /register must redirect to /login
+        res = self.client.get("/register", follow_redirects=False)
         self.assertEqual(res.status_code, 302)
         self.assertIn("/login", res.headers["Location"])
 
-        # Duplicate username attempt
-        res2 = self.client.post("/register", data={"username": "autotest_user", "password": "strongpassword123"})
-        self.assertEqual(res2.status_code, 409)
+        # POST request to /register must also redirect to /login
+        post_res = self.client.post("/register", data={"username": "autotest_user", "password": "password123"}, follow_redirects=False)
+        self.assertEqual(post_res.status_code, 302)
+        self.assertIn("/login", post_res.headers["Location"])
 
     def test_login_flow_and_lockout(self):
         """Test authentication flow, bad password handling, and brute-force lockout"""
-        # Create user
-        self.client.post("/register", data={"username": "autotest_login", "password": "mypassword123"})
+        # Seed user directly into database
+        with app.app_context():
+            user = User(
+                username="autotest_login",
+                password=generate_password_hash("mypassword123")
+            )
+            db.session.add(user)
+            db.session.commit()
 
         # Bad password attempt
         res = self.client.post("/login", data={"username": "autotest_login", "password": "wrongpassword"})
