@@ -2,6 +2,7 @@ import os
 import re
 import time
 import uuid
+import requests
 from collections import defaultdict
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from flask_sqlalchemy import SQLAlchemy
@@ -82,6 +83,9 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
     password = db.Column(db.String(200), nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=True)
+    google_id = db.Column(db.String(100), unique=True, nullable=True)
+    avatar_url = db.Column(db.String(300), nullable=True)
 
 class Message(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -126,6 +130,17 @@ with app.app_context():
     try:
         from sqlalchemy import inspect, text
         inspector = inspect(db.engine)
+        if "user" in inspector.get_table_names():
+            user_cols = [col["name"] for col in inspector.get_columns("user")]
+            with db.engine.connect() as conn:
+                if "email" not in user_cols:
+                    conn.execute(text("ALTER TABLE user ADD COLUMN email VARCHAR(120)"))
+                if "google_id" not in user_cols:
+                    conn.execute(text("ALTER TABLE user ADD COLUMN google_id VARCHAR(100)"))
+                if "avatar_url" not in user_cols:
+                    conn.execute(text("ALTER TABLE user ADD COLUMN avatar_url VARCHAR(300)"))
+                conn.commit()
+
         if "message" in inspector.get_table_names():
             columns = [col["name"] for col in inspector.get_columns("message")]
             with db.engine.connect() as conn:
@@ -164,6 +179,8 @@ def register():
     if "user_id" in session:
         return redirect(url_for("home"))
 
+    google_client_id = os.environ.get("GOOGLE_CLIENT_ID", "")
+
     if request.method == "POST":
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
@@ -171,13 +188,13 @@ def register():
         val_err = validate_registration(username, password)
         if val_err:
             flash(val_err, "error")
-            return render_template("register.html"), 400
+            return render_template("register.html", google_client_id=google_client_id), 400
 
         existing_user = User.query.filter_by(username=username).first()
 
         if existing_user:
             flash("Username already exists. Please choose a different username.", "error")
-            return render_template("register.html"), 409
+            return render_template("register.html", google_client_id=google_client_id), 409
 
         hashed_password = generate_password_hash(password)
 
@@ -192,7 +209,7 @@ def register():
         flash("Account created successfully! You can now log in.", "success")
         return redirect(url_for("login"))
 
-    return render_template("register.html")
+    return render_template("register.html", google_client_id=google_client_id)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -200,12 +217,14 @@ def login():
     if "user_id" in session:
         return redirect(url_for("home"))
 
+    google_client_id = os.environ.get("GOOGLE_CLIENT_ID", "")
+
     if request.method == "POST":
         client_ip = request.remote_addr or "127.0.0.1"
 
         if is_login_rate_limited(client_ip):
             flash("Too many failed login attempts. Please wait 5 minutes before trying again.", "error")
-            return render_template("login.html"), 429
+            return render_template("login.html", google_client_id=google_client_id), 429
 
         username = request.form.get("username", "").strip()
         password = request.form.get("password", "")
@@ -222,9 +241,105 @@ def login():
 
         record_failed_login(client_ip)
         flash("Invalid username or password.", "error")
-        return render_template("login.html"), 401
+        return render_template("login.html", google_client_id=google_client_id), 401
 
-    return render_template("login.html")
+    return render_template("login.html", google_client_id=google_client_id)
+
+
+@app.route("/login/google", methods=["POST"])
+@csrf.exempt
+def google_login():
+    data = request.get_json(silent=True) or request.form
+    token = data.get("credential") if data else None
+
+    if not token:
+        return jsonify({"success": False, "error": "Missing Google ID token."}), 400
+
+    # In testing mode or with mock token
+    if app.config.get("TESTING") and token.startswith("mock_token_"):
+        user_info = {
+            "sub": data.get("sub", "mock_google_id_123"),
+            "email": data.get("email", "mock@example.com"),
+            "name": data.get("name", "Google User"),
+            "picture": data.get("picture", "")
+        }
+    else:
+        try:
+            resp = requests.get(
+                "https://oauth2.googleapis.com/tokeninfo",
+                params={"id_token": token},
+                timeout=5
+            )
+            if resp.status_code != 200:
+                return jsonify({"success": False, "error": "Invalid or expired Google token."}), 401
+            user_info = resp.json()
+        except requests.RequestException:
+            return jsonify({"success": False, "error": "Failed to connect to Google authentication service."}), 502
+
+    google_id = user_info.get("sub")
+    email = user_info.get("email")
+    name = user_info.get("name") or (email.split("@")[0] if email else "google_user")
+    avatar = user_info.get("picture")
+
+    if not google_id:
+        return jsonify({"success": False, "error": "Google profile did not provide a valid user ID."}), 400
+
+    # Check for existing user by google_id or email
+    user = None
+    if google_id:
+        user = User.query.filter_by(google_id=google_id).first()
+    if not user and email:
+        user = User.query.filter_by(email=email).first()
+
+    if not user:
+        # Generate unique, valid username
+        base_username = re.sub(r"[^a-zA-Z0-9_\-]", "", name.replace(" ", "_"))[:20]
+        if len(base_username) < 3:
+            base_username = f"user_{google_id[:6]}"
+
+        candidate_username = base_username
+        suffix = 1
+        while User.query.filter_by(username=candidate_username).first():
+            candidate_username = f"{base_username[:15]}_{suffix}"
+            suffix += 1
+
+        random_password = uuid.uuid4().hex
+        user = User(
+            username=candidate_username,
+            password=generate_password_hash(random_password),
+            email=email,
+            google_id=google_id,
+            avatar_url=avatar
+        )
+        db.session.add(user)
+        db.session.commit()
+    else:
+        # Update user record with Google details if not already linked
+        updated = False
+        if not user.google_id:
+            user.google_id = google_id
+            updated = True
+        if email and not user.email:
+            user.email = email
+            updated = True
+        if avatar and not user.avatar_url:
+            user.avatar_url = avatar
+            updated = True
+        if updated:
+            db.session.commit()
+
+    client_ip = request.remote_addr or "127.0.0.1"
+    reset_login_attempts(client_ip)
+
+    session.clear()
+    session["user_id"] = user.id
+    session["username"] = user.username
+
+    return jsonify({
+        "success": True,
+        "redirect_url": url_for("home"),
+        "username": user.username
+    })
 
 
 @app.route("/logout")

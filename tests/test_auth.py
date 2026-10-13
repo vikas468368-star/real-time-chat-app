@@ -9,13 +9,13 @@ class AuthSecurityTestCase(unittest.TestCase):
         self.client = app.test_client()
         with app.app_context():
             # Clean up test users if existing
-            User.query.filter(User.username.like("autotest_%")).delete()
+            User.query.filter((User.username.like("autotest_%")) | (User.email.like("autotest_%"))).delete()
             db.session.commit()
         reset_login_attempts("127.0.0.1")
 
     def tearDown(self):
         with app.app_context():
-            User.query.filter(User.username.like("autotest_%")).delete()
+            User.query.filter((User.username.like("autotest_%")) | (User.email.like("autotest_%"))).delete()
             db.session.commit()
         reset_login_attempts("127.0.0.1")
 
@@ -80,6 +80,73 @@ class AuthSecurityTestCase(unittest.TestCase):
         res_after = self.client.get("/", follow_redirects=False)
         self.assertEqual(res_after.status_code, 302)
         self.assertIn("/login", res_after.headers["Location"])
+
+    def test_google_login_missing_token(self):
+        """Test that /login/google returns 400 when credential token is missing"""
+        res = self.client.post("/login/google", json={})
+        self.assertEqual(res.status_code, 400)
+        data = res.get_json()
+        self.assertFalse(data["success"])
+        self.assertIn("Missing", data["error"])
+
+    def test_google_login_new_user(self):
+        """Test Google login creates a new user profile and initiates session"""
+        res = self.client.post("/login/google", json={
+            "credential": "mock_token_abc123",
+            "sub": "mock_google_id_9999",
+            "email": "autotest_google_new@example.com",
+            "name": "autotest_guser",
+            "picture": "https://example.com/photo.jpg"
+        })
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertTrue(data["success"])
+        self.assertEqual(data["redirect_url"], "/")
+
+        with app.app_context():
+            created = User.query.filter_by(google_id="mock_google_id_9999").first()
+            self.assertIsNotNone(created)
+            self.assertEqual(created.email, "autotest_google_new@example.com")
+            self.assertEqual(created.avatar_url, "https://example.com/photo.jpg")
+
+    def test_google_login_existing_user(self):
+        """Test Google login connects to existing user record with matching email or google_id"""
+        with app.app_context():
+            existing = User(
+                username="autotest_exist",
+                password="hashed_pwd",
+                email="autotest_exist@example.com"
+            )
+            db.session.add(existing)
+            db.session.commit()
+
+        # Link and sign in with Google presenting the same verified email
+        res = self.client.post("/login/google", json={
+            "credential": "mock_token_existing",
+            "sub": "mock_google_id_8888",
+            "email": "autotest_exist@example.com",
+            "name": "autotest_exist"
+        })
+        self.assertEqual(res.status_code, 200)
+        data = res.get_json()
+        self.assertTrue(data["success"])
+        self.assertEqual(data["username"], "autotest_exist")
+
+        with app.app_context():
+            user = User.query.filter_by(username="autotest_exist").first()
+            self.assertIsNotNone(user)
+            self.assertEqual(user.google_id, "mock_google_id_8888")
+
+        # Recurring login with existing google_id returns existing user
+        res2 = self.client.post("/login/google", json={
+            "credential": "mock_token_repeat",
+            "sub": "mock_google_id_8888",
+            "email": "autotest_exist@example.com",
+            "name": "autotest_exist"
+        })
+        self.assertEqual(res2.status_code, 200)
+        data2 = res2.get_json()
+        self.assertEqual(data2["username"], "autotest_exist")
 
 if __name__ == "__main__":
     unittest.main()
