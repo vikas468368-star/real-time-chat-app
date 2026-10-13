@@ -174,12 +174,20 @@ def home():
     )
 
 
+def get_google_client_id():
+    load_dotenv(override=True)
+    cid = os.environ.get("GOOGLE_CLIENT_ID", "").strip()
+    if cid and not cid.startswith("your-client-id") and not cid.startswith("your-google-client-id"):
+        return cid
+    return ""
+
+
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if "user_id" in session:
         return redirect(url_for("home"))
 
-    google_client_id = os.environ.get("GOOGLE_CLIENT_ID", "")
+    google_client_id = get_google_client_id()
 
     if request.method == "POST":
         username = request.form.get("username", "").strip()
@@ -217,7 +225,7 @@ def login():
     if "user_id" in session:
         return redirect(url_for("home"))
 
-    google_client_id = os.environ.get("GOOGLE_CLIENT_ID", "")
+    google_client_id = get_google_client_id()
 
     if request.method == "POST":
         client_ip = request.remote_addr or "127.0.0.1"
