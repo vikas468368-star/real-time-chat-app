@@ -1,257 +1,210 @@
- <div align="center">
+<div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0F172A,50:2563EB,100:06B6D4&height=220&section=header&text=Real-Time%20Chat%20App&fontSize=42&fontColor=FFFFFF&animation=fadeIn&fontAlignY=38&desc=Connect.%20Communicate.%20Collaborate.&descSize=16&descAlignY=58&descColor=E2E8F0" width="100%" alt="Real-Time Chat App Header" />
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0F172A,50:2563EB,100:06B6D4&height=220&section=header&text=PulseChat&fontSize=46&fontColor=FFFFFF&animation=fadeIn&fontAlignY=38&desc=Production-Ready%20Real-Time%20Messaging%20Platform&descSize=16&descAlignY=58&descColor=E2E8F0" width="100%" alt="PulseChat Header" />
 
-<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=500&size=18&duration=3000&pause=1000&color=2563EB&center=true&vCenter=true&width=650&lines=Real-Time+Communication;Private+Messaging;Flask+%7C+Python+%7C+JavaScript;Built+for+Simple+and+Fast+Conversations" alt="Animated Project Introduction" />
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=500&size=18&duration=3000&pause=1000&color=2563EB&center=true&vCenter=true&width=650&lines=Full-Stack+Real-Time+Messaging;Flask+%7C+Flask-SocketIO+%7C+PostgreSQL;Live+Typing+%7C+Reactions+%7C+Read+Receipts;Searchable+History+%7C+File+Attachments+%7C+Replies" alt="PulseChat Features Typing SVG" />
 
 <p>
-  <img src="https://img.shields.io/badge/Python-3.x-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
-  <img src="https://img.shields.io/badge/Flask-Web_Framework-000000?style=for-the-badge&logo=flask&logoColor=white" alt="Flask" />
-  <img src="https://img.shields.io/badge/JavaScript-ES6%2B-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript" />
-  <img src="https://img.shields.io/badge/SQLite-Database-003B57?style=for-the-badge&logo=sqlite&logoColor=white" alt="SQLite" />
+  <img src="https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python" />
+  <img src="https://img.shields.io/badge/Flask-3.1.3-000000?style=for-the-badge&logo=flask&logoColor=white" alt="Flask" />
+  <img src="https://img.shields.io/badge/Socket.IO-4.8.1-010101?style=for-the-badge&logo=socketdotio&logoColor=white" alt="Socket.IO" />
+  <img src="https://img.shields.io/badge/SQLAlchemy-3.1.1-D71F00?style=for-the-badge&logo=sqlalchemy&logoColor=white" alt="SQLAlchemy" />
+  <img src="https://img.shields.io/badge/Gunicorn-26.1.0-499848?style=for-the-badge&logo=gunicorn&logoColor=white" alt="Gunicorn" />
+  <img src="https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge" alt="MIT License" />
 </p>
 
-**A web-based messaging application for private conversations, interactive communication, and persistent chat history.**
+**PulseChat is a modern, responsive, full-stack real-time messaging application engineered with Flask, Flask-SocketIO, SQLAlchemy, and vanilla modern JavaScript.**
 
 <p>
-  <a href="#features">Features</a> ·
-  <a href="#installation">Installation</a> ·
-  <a href="#project-structure">Project Structure</a> ·
-  <a href="#future-improvements">Future Improvements</a>
+  <a href="#key-features">Key Features</a> ·
+  <a href="#architecture--tech-stack">Tech Stack</a> ·
+  <a href="#quick-start">Quick Start</a> ·
+  <a href="#automated-testing">Testing</a> ·
+  <a href="#production-deployment">Deployment</a> ·
+  <a href="#license">License</a>
 </p>
 
 </div>
 
 ---
 
-## Overview
+## Key Features
 
-Real-Time Chat App is a web-based messaging project built with Python, Flask, HTML, CSS, JavaScript, and SQLite. It provides an interactive interface for users to access their accounts, select contacts, and communicate through private conversations.
+### ⚡ Real-Time Messaging & Presence
+- **Bidirectional WebSocket Communication:** Powered by Flask-SocketIO with automatic HTTP long-polling fallback.
+- **Multi-Tab Presence Tracking:** Tracks multiple tabs/devices per user using session-mapped connection sets (`user_sessions = defaultdict(set)`). Users remain online until their last active device disconnects.
+- **Live Typing Wave Indicator:** Micro-animated typing wave anchored above the dock with debounced auto-stop timers.
+- **Real-Time Read Receipts:** Visual checkmarks automatically update from single sent checkmark to double cyan ticks (`✓✓`) live upon recipient view.
+- **Message Editing & Deletion:**
+  - In-place message edits with live broadcast and visual pulse animations.
+  - "Delete for Everyone" permanently removes messages and unlinks replies.
+  - "Delete for Me" hides messages for the requesting user while preserving history for other participants.
 
-The project combines backend development, database management, user authentication, and frontend interactions in one application.
+### 🔍 Search & Rich Interaction
+- **Sidebar Contact Search:** Case-insensitive search filters direct messages in real time with `/` keyboard shortcut.
+- **In-Conversation Content Search:** Press `Ctrl+F` (or header search icon) to search within active conversations, highlight matches (`<mark>`), view match counts (e.g., `2 of 7`), and navigate matches with `▲` / `▼`.
+- **Quote Replies:** Reply to any message with an interactive quote preview banner. Clicking quotes jumps and smoothly scrolls to the target message with an ambient glow pulse.
+- **Emoji Reactions:** Quick reaction popover with common emojis (`👍`, `❤️`, `😂`, `😮`, `😢`, `🔥`, etc.). Reactions aggregate live with user-reacted badge indicators.
+- **File & Image Attachments:** Secure file upload endpoint with MIME/extension whitelist, max size validation (15MB), inline image previews with full-screen lightbox modal, and downloadable document cards.
+- **Audio & Push Alerts:** Zero-dependency audio chime synthesized via Web Audio API alongside desktop Web Notifications support.
 
-It is designed as a practical full-stack web development project that can be extended with additional communication features and production-ready infrastructure.
+### 🛡️ Security & Reliability
+- **CSRF Protection:** Integrated Flask-WTF CSRF protection across all web forms and asynchronous file uploads.
+- **Brute-Force Rate Limiting:** Enforces a 5-attempt / 5-minute IP lockout on failed logins to prevent credential stuffing.
+- **Password Hashing:** Passwords securely hashed with salted Werkzeug crypto hashing (`scrypt`/`pbkdf2`).
+- **Authorization Enforcement:** Authoritative server-side authorization checks on all room joins, message dispatches, edits, and deletions.
+- **Database Indexing & Integrity:** Composite foreign-key indexes (`sender_id`, `receiver_id`, `timestamp`) and unique constraints prevent N+1 queries and duplicate record creation.
 
-## Features
+---
 
-| Feature | Description |
-|---|---|
-| User Authentication | Registration, login, and user sessions. |
-| Private Messaging | Communicate with individual users. |
-| Persistent Chat History | Store and retrieve messages using a database. |
-| Online Status | Display user availability. |
-| Typing Indicator | Indicate when another user is typing. |
-| Unread Messages | Track unread messages in conversations. |
-| Message Editing | Edit previously sent messages, subject to application permissions. |
-| Message Deletion | Delete messages using supported deletion options. |
-| Responsive Interface | Chat layout with contacts and a conversation area. |
-| Theme Controls | Theme-toggle interface, depending on the current implementation. |
-
-Feature availability may depend on the current code and configuration. Verify each feature in the running application before treating it as production-ready.
-
-## Technology Stack
-
-<div align="center">
-
-| Layer | Technology |
-|---|---|
-| Backend | Python, Flask |
-| Real-Time Communication | Flask-SocketIO, if enabled in the current configuration |
-| Frontend | HTML5, CSS3, JavaScript |
-| Database | SQLite |
-| Templates | Jinja2 |
-| Development Environment | VS Code, PowerShell |
-| Version Control | Git and GitHub |
-
-</div>
-
-## Project Structure
+## Architecture & Tech Stack
 
 ```text
-real-time-chat-app/
-│
-├── app.py
-├── requirements.txt
-├── README.md
-├── .gitignore
-│
-├── static/
-│   ├── css/
-│   │   ├── auth.css
-│   │   └── style.css
-│   │
-│   └── js/
-│       └── chat.js
-│
-├── templates/
-│   ├── index.html
-│   ├── login.html
-│   └── register.html
-│
-├── instance/       # Local application data, if configured
-└── venv/           # Local Python virtual environment
+┌────────────────────────────────────────────────────────┐
+│                   Client Layer                         │
+│  HTML5 + Vanilla CSS Design System + ES6 JavaScript     │
+│  • Theme Persistence (Dark / Light)                    │
+│  • Web Audio API Synthesizer                           │
+│  • History State API for Mobile Back Navigation        │
+└───────────────────────────┬────────────────────────────┘
+                            │ WebSocket / REST API
+┌───────────────────────────▼────────────────────────────┐
+│                   Server Layer                         │
+│  Python 3 + Flask 3.1.3 + Flask-SocketIO 5.6.1         │
+│  • Flask-WTF (CSRF Protection)                         │
+│  • Gunicorn + Eventlet (Production WSGI)              │
+│  • In-Memory Presence & Sockets Multi-Tab Engine       │
+└───────────────────────────┬────────────────────────────┘
+                            │ SQLAlchemy ORM
+┌───────────────────────────▼────────────────────────────┐
+│                   Database Layer                       │
+│  SQLite (Local Development) / PostgreSQL (Production)  │
+│  • Users, Messages, DeletedMessages, Reactions         │
+└────────────────────────────────────────────────────────┘
 ```
 
-The structure above reflects the known project files. Additional files may exist in your local repository.
+---
 
-## Installation
+## Quick Start
 
 ### Prerequisites
-
-Install the following:
-
-- Python 3.x
+- Python 3.10+
 - Git
-- A modern web browser
-- Windows PowerShell or another terminal
 
-### 1. Clone the repository
-
-```powershell
+### 1. Clone & Navigate
+```bash
 git clone https://github.com/vikas468368-star/real-time-chat-app.git
-```
-
-### 2. Open the project directory
-
-```powershell
 cd real-time-chat-app
 ```
 
-### 3. Create a virtual environment
-
-```powershell
+### 2. Set Up Virtual Environment
+```bash
+# Windows
 python -m venv venv
-```
-
-### 4. Activate the environment
-
-```powershell
 .\venv\Scripts\Activate.ps1
+
+# macOS / Linux
+python3 -m venv venv
+source venv/bin/activate
 ```
 
-If PowerShell blocks activation, use the environment's Python executable directly for the following commands.
-
-### 5. Install dependencies
-
-```powershell
-python -m pip install -r requirements.txt
+### 3. Install Dependencies
+```bash
+pip install -r requirements.txt
 ```
 
-### 6. Start the application
+### 4. Configure Environment
+```bash
+# Copy example environment configuration
+cp .env.example .env
+```
+Edit `.env` if desired (defaults work out of the box with local SQLite).
 
-```powershell
+### 5. Launch Development Server
+```bash
 python app.py
 ```
+Open **[http://127.0.0.1:5000](http://127.0.0.1:5000)** in your browser.
 
-Open the local URL displayed in the terminal. For a typical Flask development configuration, it may be:
+---
 
-```text
-http://127.0.0.1:5000
+## Automated Testing
+
+PulseChat contains a comprehensive automated test suite in `tests/`:
+
+```bash
+python -m unittest discover tests
 ```
 
-The actual URL depends on your application configuration.
+### Test Coverage
+- `tests/test_auth.py`: Registration validation, duplicate checks, brute force lockout, and logout.
+- `tests/test_messaging.py`: Real-time private delivery, room isolation, length capping, and chronological history.
+- `tests/test_presence_receipts.py`: Multi-tab tracking, typing events, and live read receipts.
+- `tests/test_edit_delete.py`: Author editing authorization, Delete for Me isolation, and Delete for Everyone purge.
+- `tests/test_features_integrity.py`: Secure uploads, reply linking, emoji reactions, and cascade cleanup.
 
-## How It Works
+---
 
+## Production Deployment
+
+### Option A: Render (One-Click Blueprint)
+1. Push your repository to GitHub.
+2. In [Render](https://render.com), create a **New Blueprint Instance**.
+3. Select this repository. The included [`render.yaml`](render.yaml) automatically provisions:
+   - A managed PostgreSQL database.
+   - A Web Service with Gunicorn + Eventlet worker.
+   - Auto-generated `SECRET_KEY` and connection string injection.
+
+### Option B: Railway / Heroku / Container
+The included [`Procfile`](Procfile) specifies the production entrypoint:
 ```text
-        User Opens Application
-                 |
-                 v
-       Register or Log In
-                 |
-                 v
-         Open Chat Interface
-                 |
-                 v
-       Select a Conversation
-                 |
-                 v
-        Send or Receive Message
-                 |
-                 v
-       Backend Processes Message
-                 |
-                 v
-      Database Stores Chat History
-                 |
-                 v
-      Conversation Updates in UI
+web: gunicorn --worker-class eventlet -w 1 app:app
 ```
 
-The frontend provides the chat interface, while the backend processes requests and manages application data. The database supports persistent storage, allowing messages to be retrieved after a page refresh or a later session.
+Environment variables to configure in your production dashboard:
+- `SECRET_KEY`: A strong, randomly generated secret string.
+- `DATABASE_URL`: Connection URI for your managed PostgreSQL database (`postgresql://...`).
+- `FLASK_ENV`: Set to `production` (enables secure HTTPS cookies).
 
-When configured, Socket.IO can support real-time communication between connected users.
+---
 
-## Security Considerations
+## Repository Structure
 
-Before making the application publicly accessible:
+```text
+real-time-chat-app/
+├── app.py                     # Core Flask & Socket.IO server and ORM models
+├── requirements.txt           # Lean production runtime dependencies
+├── Procfile                   # Gunicorn WSGI startup configuration
+├── render.yaml                # Render cloud deployment blueprint
+├── .env.example               # Environment variable template
+├── LICENSE                    # MIT License
+├── static/
+│   ├── css/
+│   │   ├── auth.css           # Authentication layout and alert styles
+│   │   └── style.css          # Design system, glassmorphism, responsive styles
+│   ├── js/
+│   │   └── chat.js            # Real-time client state, sound, and search engine
+│   └── uploads/               # User attachment directory
+├── templates/
+│   ├── index.html             # Chat app shell and interactive dock
+│   ├── login.html             # Login view with CSRF alerts
+│   └── register.html          # Registration view with client validation
+└── tests/
+    ├── test_auth.py
+    ├── test_messaging.py
+    ├── test_presence_receipts.py
+    ├── test_edit_delete.py
+    └── test_features_integrity.py
+```
 
-- Keep secret keys and credentials in environment variables.
-- Never commit `.env` files, database files, or virtual environments.
-- Use secure password hashing.
-- Validate and authorize message editing and deletion on the server.
-- Protect authenticated routes and user sessions.
-- Configure CSRF protection where applicable.
-- Use HTTPS in production.
-- Disable Flask debug mode in production.
-- Validate file uploads if attachments are introduced.
-- Apply appropriate access controls to private conversations.
-
-## Future Improvements
-
-The following are potential extensions, not claims that they are already implemented.
-
-- Group chats and group administration.
-- Image and document sharing.
-- Message replies and emoji reactions.
-- Searchable chat history.
-- Desktop or browser notifications.
-- Improved mobile navigation and accessibility.
-- Automated tests for authentication and messaging.
-- Production deployment with a managed database.
-- Stronger monitoring, logging, and error handling.
-
-## Learning Objectives
-
-This project provides practical experience with:
-
-- Building a web application with Flask.
-- Creating registration and login workflows.
-- Connecting a frontend to a Python backend.
-- Working with relational databases.
-- Managing messages and conversation state.
-- Implementing real-time interactions.
-- Organizing templates, static files, and backend logic.
-- Maintaining a project with Git and GitHub.
-
-## Contributing
-
-Contributions and suggestions are welcome.
-
-1. Fork the repository.
-2. Create a feature branch.
-3. Implement your changes.
-4. Test the application.
-5. Submit a pull request with a description of the changes.
-
-## Author
-
-**Vikas Madheshiya**
-
-GitHub: [@vikas468368-star](https://github.com/vikas468368-star)
-
-Project Repository: [Real-Time Chat App](https://github.com/vikas468368-star/real-time-chat-app)
+---
 
 ## License
 
-No license has been specified in this README. Add a `LICENSE` file if you want to define the terms under which others may use, modify, and distribute the project.
+This project is licensed under the [MIT License](LICENSE).
 
 ---
 
 <div align="center">
-
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:06B6D4,50:2563EB,100:0F172A&height=110&section=footer" width="100%" alt="Decorative Gradient Footer" />
-
-<sub>Built for clear communication and practical full-stack development.</sub>
-
+<sub>Designed and developed by <b>Vikas Madheshiya</b></sub>
 </div>

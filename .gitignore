@@ -1,4 +1,4 @@
-﻿venv/
+venv/
 .venv/
 __pycache__/
 *.py[cod]
@@ -10,3 +10,5 @@ instance/
 *.sqlite
 *.sqlite3
 .vscode/
+static/uploads/*
+!static/uploads/.gitkeep
