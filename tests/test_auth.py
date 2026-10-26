@@ -61,6 +61,7 @@ class AuthSecurityTestCase(unittest.TestCase):
         self.assertEqual(success_res.status_code, 302)
         self.assertEqual(success_res.headers["Location"], "/")
 
+
     def test_logout_and_session_clearing(self):
         """Test that logout terminates session and protects dashboard"""
         with self.client.session_transaction() as sess:
@@ -71,8 +72,8 @@ class AuthSecurityTestCase(unittest.TestCase):
         res = self.client.get("/")
         self.assertEqual(res.status_code, 200)
 
-        # Logout
-        logout_res = self.client.get("/logout", follow_redirects=False)
+        # Logout using POST
+        logout_res = self.client.post("/logout", follow_redirects=False)
         self.assertEqual(logout_res.status_code, 302)
         self.assertIn("/login", logout_res.headers["Location"])
 
@@ -80,6 +81,7 @@ class AuthSecurityTestCase(unittest.TestCase):
         res_after = self.client.get("/", follow_redirects=False)
         self.assertEqual(res_after.status_code, 302)
         self.assertIn("/login", res_after.headers["Location"])
+
 
     def test_google_login_missing_token(self):
         """Test that /login/google returns 400 when credential token is missing"""

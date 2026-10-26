@@ -16,7 +16,12 @@ load_dotenv()
 
 app = Flask(__name__)
 
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "pulsechat-development-secret-key-please-change-in-production")
+secret_key = os.environ.get("SECRET_KEY")
+
+if os.environ.get("FLASK_ENV") == "production" and not secret_key:
+    raise RuntimeError("SECRET_KEY must be configured in production.")
+
+app.config["SECRET_KEY"] = secret_key or "pulsechat-development-only-key"
 db_url = os.environ.get("DATABASE_URL", "sqlite:///chat.db")
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
@@ -44,7 +49,21 @@ def allowed_file(filename):
 
 csrf = CSRFProtect(app)
 db = SQLAlchemy(app)
-socketio = SocketIO(app, cors_allowed_origins="*")
+
+allowed_origins = os.environ.get(
+    "SOCKETIO_ALLOWED_ORIGINS",
+    "http://127.0.0.1:5000,http://localhost:5000"
+)
+
+socketio = SocketIO(
+    app,
+    cors_allowed_origins=[
+        origin.strip()
+        for origin in allowed_origins.split(",")
+        if origin.strip()
+    ]
+)
+
 user_sessions = defaultdict(set)
 sid_to_user = {}
 
@@ -357,7 +376,7 @@ def google_login():
     })
 
 
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
 def logout():
     session.clear()
     flash("You have been logged out successfully.", "success")
@@ -1016,4 +1035,4 @@ def handle_stop_typing(data):
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    socketio.run(app, host="127.0.0.1", port=port, debug=True, allow_unsafe_werkzeug=True, use_reloader=False)
+    socketio.run(app, host="127.0.0.1", port=port, debug=True, allow_unsafe_werkzeug=True, use_reloader=False)

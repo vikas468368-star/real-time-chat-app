@@ -13,6 +13,8 @@ services:
         fromDatabase:
           name: pulsechat-db
           property: connectionString
+      - key: SOCKETIO_ALLOWED_ORIGINS
+        sync: false
 
 databases:
   - name: pulsechat-db
